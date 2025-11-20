@@ -2,16 +2,16 @@ import EventType from "../models/EventType.js";
 
 export const getEventTypes = async (req, res) => {
     try {
-        const eventTypes = (await EventType.find({ userId: req.user.id })).sort({
-            createdAt: -1,
-        });
-        res.json(eventTypes);
+        const eventTypes = await EventType.find({ userId: req.user.id })
+            .sort({ createdAt: -1 }); // 👈 this is correct
+
+        res.json(eventTypes); // returns an array, which your frontend expects
     } catch (error) {
         console.error("Error Fetching Event Types:", error);
         res.status(500).json({
             success: false,
             message: "Internal Server Error",
-        })
+        });
     }
 };
 
