@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import authRotes from "./routes/authRoutes.js";
 import eventTypeRoutes from "./routes/eventTypeRoutes.js";
+import availabilityRoutes from "./routes/availabilityRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRotes);
 app.use("/api/eventTypes", eventTypeRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/", publicRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

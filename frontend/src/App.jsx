@@ -9,6 +9,7 @@ import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import PublicBooking from "./pages/publicBooking.jsx";
 import { fetchMe, setInitialized } from "./features/auth/authSlice.js";
 
 function AppInner() {
@@ -39,6 +40,11 @@ function AppInner() {
           }
         />
 
+        <Route
+          path="/u/:username/event/:slug"
+          element={<PublicBooking />}
+        />
+        
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

@@ -5,6 +5,7 @@ import {
   createEventType,
   deleteEventType,
 } from "../features/eventTypes/eventTypeSlice.js";
+import AvailabilitySettings from "../components/AvailabilitySettings.jsx";
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -170,6 +171,7 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
+      <AvailabilitySettings />
     </div>
   );
 }
