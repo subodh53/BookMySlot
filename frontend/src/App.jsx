@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import Layout from "./components/Layout.jsx";
@@ -53,8 +53,8 @@ function AppInner() {
 
 export default function App() {
    return (
-    <BrowserRouter>
+    <HashRouter>
       <AppInner />
-    </BrowserRouter>
+    </HashRouter>
    )
 }
