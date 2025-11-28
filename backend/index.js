@@ -3,6 +3,7 @@ import authRotes from "./routes/authRoutes.js";
 import eventTypeRoutes from "./routes/eventTypeRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRotes);
 app.use("/api/eventTypes", eventTypeRoutes);
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/bookings", bookingRoutes);
 app.use("/", publicRoutes);
 
 const PORT = process.env.PORT || 3000;

@@ -8,7 +8,7 @@ export const fetchAvailability = createAsyncThunk(
             const res = await getAvailabilityApi();
             return res.data;
         } catch (error) {
-            return thunkAPI.rejectWithValue(error);
+            return thunkAPI.rejectWithValue(error.message);
         }
     }
 );
@@ -20,7 +20,7 @@ export const saveAvailability = createAsyncThunk(
             const res = await saveAvailabilityApi(payload);
             return res.data;
         } catch (error) {
-            return thunkAPI.rejectWithValue(error);
+            return thunkAPI.rejectWithValue(error.message);
         }
     }
 );

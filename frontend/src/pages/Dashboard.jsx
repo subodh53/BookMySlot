@@ -6,6 +6,7 @@ import {
   deleteEventType,
 } from "../features/eventTypes/eventTypeSlice.js";
 import AvailabilitySettings from "../components/AvailabilitySettings.jsx";
+import MyBookings from "../components/MyBookings.jsx";
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -172,6 +173,7 @@ export default function Dashboard() {
         )}
       </section>
       <AvailabilitySettings />
+      <MyBookings />
     </div>
   );
 }

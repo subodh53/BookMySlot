@@ -102,3 +102,47 @@ export const createPublicBooking = async (req, res) => {
         });
     }
 };
+
+export const getMyBookings = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const now = new Date();
+
+        const bookings = await Booking.find({
+            userId,
+            start: { $gte: now },
+            status: "confirmed",
+        })
+            .sort({ start: 1 })
+            .populate("eventTypeId", "title durationMinutes")
+            .lean();
+
+        res.json({
+            success: true,
+            bookings: bookings.map((b) => ({
+                id: b._id,
+                start: b.start,
+                end: b.end,
+                inviteeName: b.inviteeName,
+                inviteeEmail: b.inviteeEmail,
+                inviteeTimezone: b.inviteeTimezone,
+                notes: b.notes,
+                status: b.status,
+                event: b.eventTypeId
+                    ? {
+                        id: b.eventTypeId._id,
+                        title: b.eventTypeId.title,
+                        durationMinutes: b.eventTypeId.durationMinutes,
+                    }
+                    : null,
+            })),
+        });
+    } catch (error) {
+        console.error("Error Fetching Bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+}
