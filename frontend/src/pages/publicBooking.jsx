@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -65,6 +65,7 @@ function getDateInTimeZone(isoStr, timeZone) {
 
 export default function PublicBooking() {
   const { username, slug } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
   const [notFound, setNotFound] = useState(false);
@@ -217,13 +218,16 @@ export default function PublicBooking() {
         throw new Error(msg);
       }
 
-      setBookingStatus("succeeded");
-      setBookingSuccessMessage("Your meeting is booked! 🎉");
+      // setBookingStatus("succeeded");
+      // setBookingSuccessMessage("Your meeting is booked! 🎉");
 
-      // Optionally close after a short delay
-      setTimeout(() => {
-        closeBookingModal();
-      }, 1500);
+      navigate("/booking/confirmed", {
+      state: {
+        booking: data.booking,
+        event: data.event,
+        host: data.host,
+      },
+    });
     } catch (err) {
       console.error("Booking error:", err);
       setBookingStatus("failed");

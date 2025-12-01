@@ -7,6 +7,7 @@ import {
 } from "../features/eventTypes/eventTypeSlice.js";
 import AvailabilitySettings from "../components/AvailabilitySettings.jsx";
 import MyBookings from "../components/MyBookings.jsx";
+import { buildPublicEventUrl } from "../utils/urlHelpers.js";
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -46,6 +47,24 @@ export default function Dashboard() {
       alert(result.payload || "Failed to delete event type");
     }
   };
+
+  const publicUrlFor = (slug) =>
+  user?.username ? buildPublicEventUrl(user.username, slug) : "";
+
+const handleCopyLink = (slug) => {
+  if (!user?.username) return;
+  const url = publicUrlFor(slug);
+
+  if (!url) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url);
+    alert("Public link copied to clipboard!");
+  } else {
+    // Fallback
+    window.prompt("Copy this link:", url);
+  }
+};
 
   return (
     <div className="space-y-6">
@@ -128,50 +147,67 @@ export default function Dashboard() {
       </section>
 
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <h2 className="text-lg font-medium text-slate-900 mb-3">
-          Your event types
-        </h2>
+  <h2 className="text-lg font-medium text-slate-900 mb-3">
+    Your event types
+  </h2>
 
-        {status === "loading" ? (
-          <div className="text-sm text-slate-500">Loading event types...</div>
-        ) : items.length === 0 ? (
-          <div className="text-sm text-slate-500">
-            You don’t have any event types yet. Create your first one above.
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {items.map((et) => (
-              <li
-                key={et._id}
-                className="flex items-center justify-between border border-slate-200 rounded-xl px-3 py-2"
-              >
-                <div>
-                  <div className="font-medium text-slate-900">
-                    {et.title}{" "}
-                    <span className="text-xs text-slate-500">
-                      ({et.durationMinutes} mins)
-                    </span>
-                  </div>
-                  {user && (
-                    <div className="text-xs text-slate-500">
-                      Public link:{" "}
-                      <code className="bg-slate-100 px-1.5 py-0.5 rounded">
-                        /u/{user.username}/event/{et.slug}
-                      </code>
-                    </div>
-                  )}
+  {status === "loading" ? (
+    <div className="text-sm text-slate-500">Loading event types...</div>
+  ) : items.length === 0 ? (
+    <div className="text-sm text-slate-500">
+      You don’t have any event types yet. Create your first one above.
+    </div>
+  ) : (
+    <ul className="space-y-2">
+      {items.map((et) => {
+        const url = publicUrlFor(et.slug);
+
+        return (
+          <li
+            key={et._id}
+            className="flex items-center justify-between border border-slate-200 rounded-xl px-3 py-2"
+          >
+            <div>
+              <div className="font-medium text-slate-900">
+                {et.title}{" "}
+                <span className="text-xs text-slate-500">
+                  ({et.durationMinutes} mins)
+                </span>
+              </div>
+              {user && (
+                <div className="text-xs text-slate-500 mt-0.5">
+                  Public link:{" "}
+                  <code className="bg-slate-100 px-1.5 py-0.5 rounded break-all">
+                    {url || `/u/${user.username}/event/${et.slug}`}
+                  </code>
                 </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {url && (
                 <button
-                  onClick={() => handleDelete(et._id)}
-                  className="text-xs text-red-600 hover:text-red-700"
+                  type="button"
+                  onClick={() => handleCopyLink(et.slug)}
+                  className="text-[11px] px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:border-sky-500 hover:text-sky-700"
                 >
-                  Delete
+                  Copy link
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              )}
+              <button
+                onClick={() => handleDelete(et._id)}
+                className="text-xs text-red-600 hover:text-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</section>
+
       <AvailabilitySettings />
       <MyBookings />
     </div>

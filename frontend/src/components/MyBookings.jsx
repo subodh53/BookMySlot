@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getMyBookings } from "../features/bookings/bookingsSlice";
+import { getMyBookings, updateBookingStatus } from "../features/bookings/bookingsSlice";
 
 function formatDateTime(dateStr, timeZone) {
   const d = new Date(dateStr);
@@ -23,12 +23,23 @@ function formatDateTime(dateStr, timeZone) {
 
 export default function MyBookings() {
   const dispatch = useDispatch();
-  const { items, status, error } = useSelector((state) => state.bookings);
+  const { items, status, error, updating } = useSelector((state) => state.bookings);
   const hostTimezone = useSelector((state) => state.auth.user?.timezone);
 
   useEffect(() => {
     dispatch(getMyBookings());
   }, [dispatch]);
+  
+  const handleCancel = (id) => {
+    const ok = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+    if (!ok) return;
+
+    dispatch(updateBookingStatus({ id, status: "cancelled" }));
+  };
+
+  const visibleBookings = items.filter((b) => b.status === "confirmed");
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
@@ -47,13 +58,13 @@ export default function MyBookings() {
         </div>
       )}
 
-      {status === "succeeded" && items.length === 0 && (
+      {status === "succeeded" && visibleBookings.length === 0 && (
         <p className="text-xs text-slate-500">
           You don&apos;t have any upcoming bookings yet.
         </p>
       )}
 
-      {items.length > 0 && (
+      {visibleBookings.length > 0 && (
         <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden">
           <table className="w-full border-collapse text-xs">
             <thead className="bg-slate-50">
@@ -63,10 +74,11 @@ export default function MyBookings() {
                 <th className="px-3 py-2 font-medium">Invitee</th>
                 <th className="px-3 py-2 font-medium">Email</th>
                 <th className="px-3 py-2 font-medium">Notes</th>
+                <th className="px-3 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((booking) => {
+              {visibleBookings.map((booking) => {
                 const { date, time } = formatDateTime(
                   booking.start,
                   hostTimezone
@@ -116,6 +128,16 @@ export default function MyBookings() {
                         {booking.notes || "-"}
                       </div>
                     </td>
+                    <td className="px-3 py-2 align-top">
+                      <button
+                        type="button"
+                        disabled={updating}
+                        onClick={() => handleCancel(booking.id)}
+                        className="text-[11px] px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -125,8 +147,8 @@ export default function MyBookings() {
       )}
 
       <p className="mt-3 text-[10px] text-slate-400">
-        Showing upcoming confirmed bookings. In future we can add filters for
-        past / cancelled.
+        Showing upcoming confirmed bookings. Cancelled bookings are hidden for
+        now; later we can add filters for past / cancelled.
       </p>
     </div>
   );

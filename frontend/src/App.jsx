@@ -10,6 +10,7 @@ import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import PublicBooking from "./pages/publicBooking.jsx";
+import BookingConfirmation from "./pages/BookingConfirmation.jsx";
 import { fetchMe, setInitialized } from "./features/auth/authSlice.js";
 
 function AppInner() {
@@ -43,6 +44,11 @@ function AppInner() {
         <Route
           path="/u/:username/event/:slug"
           element={<PublicBooking />}
+        />
+
+        <Route
+          path="/booking/confirmed"
+          element={<BookingConfirmation/>}
         />
         
         <Route path="*" element={<NotFound />} />

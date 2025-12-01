@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getMyBookingsApi } from '../../api/bookingsApi';
+import { getMyBookingsApi, updateBookingStatusApi } from '../../api/bookingsApi';
 
 export const getMyBookings = createAsyncThunk(
     "bookings/getMyBookings",
@@ -13,12 +13,25 @@ export const getMyBookings = createAsyncThunk(
     }
 );
 
+export const updateBookingStatus = createAsyncThunk(
+    "bookings/updateBookingStatus",
+    async({ id, status }, thunkAPI) => {
+        try {
+            const res = await updateBookingStatusApi(id, status);
+            return res.data;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error.message);
+        }
+    }
+)
+
 const bookingsSlice = createSlice({
     name: "bookings",
     initialState: {
         items: [],
         status: "idle",
         error: null,
+        updating: false,
     },
     reducers: {},
     extraReducers: (builder) => {
@@ -33,6 +46,23 @@ const bookingsSlice = createSlice({
             })
             .addCase(getMyBookings.rejected, (state, action) => {
                 state.status = "failed";
+                state.error = action.payload;
+            })
+            .addCase(updateBookingStatus.pending, (state) => {
+                state.updating = true;
+            })
+            .addCase(updateBookingStatus.fulfilled, (state, action) => {
+                state.updating = false;
+                const updated = action.payload.booking
+                if(!updated) return;
+
+                const index = state.items.findIndex((b) => b.id === updated.id);
+                if(index !== -1){
+                    state.items[index].status = updated.status;
+                }
+            })
+            .addCase(updateBookingStatus.rejected, (state, action) => {
+                state.updating = false;
                 state.error = action.payload;
             });
     },

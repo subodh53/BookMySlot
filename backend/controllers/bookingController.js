@@ -146,3 +146,53 @@ export const getMyBookings = async (req, res) => {
         });
     }
 }
+
+export const updateBookingStatus = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const allowedStatuses = ["confirmed", "cancelled"];
+
+        if(!allowedStatuses.includes(status)){
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status",
+            });
+        }
+
+        const booking = await Booking.findOne({ _id: id, userId });
+
+        if(!booking){
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+        
+        booking.status = status;
+        await booking.save();
+
+        return res.json({
+            success: true,
+            booking: {
+                id: booking._id,
+                start: booking.start,
+                end: booking.end,
+                inviteeName: booking.inviteeName,
+                inviteeEmail: booking.inviteeEmail,
+                inviteeTimezone: booking.inviteeTimezone,
+                notes: booking.notes,
+                status: booking.status,
+                eventTypeId: booking.eventTypeId,
+            },
+        });
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+}
