@@ -1,5 +1,7 @@
+// frontend/src/pages/BookingConfirmation.jsx
 import { useLocation, useNavigate } from "react-router-dom";
 
+/** Helpers **/
 function formatDateTime(dateStr, timeZone) {
   if (!dateStr) return { date: "", time: "" };
   const d = new Date(dateStr);
@@ -22,6 +24,107 @@ function formatDateTime(dateStr, timeZone) {
   return { date, time };
 }
 
+/** Convert ISO to YYYYMMDDTHHMMSSZ for ICS (UTC) **/
+function toICSDate(isoStr) {
+  const d = new Date(isoStr);
+  const pad = (n) => String(n).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const month = pad(d.getUTCMonth() + 1);
+  const day = pad(d.getUTCDate());
+  const hour = pad(d.getUTCHours());
+  const minute = pad(d.getUTCMinutes());
+  const second = pad(d.getUTCSeconds());
+  return `${year}${month}${day}T${hour}${minute}${second}Z`;
+}
+
+/** Build ICS string */
+function buildICS(booking, event, host) {
+  const uid = `booking-${booking.id}@bookmyslot`;
+  const dtstamp = toICSDate(new Date().toISOString());
+  const dtstart = toICSDate(booking.start);
+  const dtend = toICSDate(booking.end);
+  const summary = `${event.title} with ${host.name || host.username || ""}`.trim();
+  const descriptionLines = [
+    `Booked via BookMySlot`,
+    `Event: ${event.title}`,
+    `Host: ${host.name || host.username || ""}`,
+    `Invitee: ${booking.inviteeName} <${booking.inviteeEmail}>`,
+    booking.notes ? `Notes: ${booking.notes}` : null,
+  ].filter(Boolean);
+  const description = descriptionLines.join("\\n");
+
+  // Basic VEVENT
+  const icsLines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//BookMySlot//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${dtstart}`,
+    `DTEND:${dtend}`,
+    `SUMMARY:${escapeICSText(summary)}`,
+    `DESCRIPTION:${escapeICSText(description)}`,
+    `ORGANIZER:MAILTO:${escapeICSText(host.email || "")}`,
+    `STATUS:CONFIRMED`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+
+  return icsLines.join("\r\n");
+}
+
+/** Escape newlines and commas and semicolons for ICS format */
+function escapeICSText(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+/** Trigger download of ICS file */
+function downloadICS(icsString, filename = "event.ics") {
+  const blob = new Blob([icsString], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Build Google Calendar quick link */
+function buildGoogleCalendarUrl({ booking, event, host }) {
+  const start = new Date(booking.start).toISOString().replace(/-|:|\.\d{3}Z/g, "");
+  const end = new Date(booking.end).toISOString().replace(/-|:|\.\d{3}Z/g, "");
+  // start/end in format YYYYMMDDTHHMMSSZ without punctuation (works)
+  const text = `${event.title} with ${host.name || host.username || ""}`;
+  const details = [
+    `Event: ${event.title}`,
+    `Host: ${host.name || host.username || ""}`,
+    `Invitee: ${booking.inviteeName} <${booking.inviteeEmail}>`,
+    booking.notes ? `Notes: ${booking.notes}` : null,
+  ].filter(Boolean).join("\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: text,
+    details: details,
+    // location could be added here
+    dates: `${start}/${end}`,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** Component **/
 export default function BookingConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,7 +132,7 @@ export default function BookingConfirmation() {
 
   const booking = state.booking;
   const event = state.event;
-  const host = state.host;
+  const host = state.host || {};
 
   // Fallback if someone hits this URL directly
   if (!booking || !event || !host) {
@@ -57,6 +160,15 @@ export default function BookingConfirmation() {
 
   const hostTimezone = host.timezone || booking.inviteeTimezone;
   const { date, time } = formatDateTime(booking.start, hostTimezone);
+
+  // ICS + Google calendar handlers
+  const handleDownloadICS = () => {
+    const ics = buildICS(booking, event, host);
+    const fileName = `${event.title.replace(/\s+/g, "_")}-${booking.id}.ics`;
+    downloadICS(ics, fileName);
+  };
+
+  const googleUrl = buildGoogleCalendarUrl({ booking, event, host });
 
   return (
     <div className="py-10 flex justify-center">
@@ -129,12 +241,26 @@ export default function BookingConfirmation() {
           )}
         </div>
 
-        {/* Placeholder for future "Add to calendar" */}
-        <div className="flex flex-col gap-2 text-xs text-slate-500">
-          <p>
-            You can add this to your calendar or look for a confirmation email
-            once email notifications are enabled.
-          </p>
+        {/* Add to calendar area */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-slate-500">Add to your calendar</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadICS}
+              className="flex-1 text-xs px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-sky-500 hover:text-sky-700"
+            >
+              Download .ics
+            </button>
+            <a
+              href={googleUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 text-xs px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-center"
+            >
+              Open in Google Calendar
+            </a>
+          </div>
         </div>
 
         <div className="flex justify-between pt-2">
